@@ -47,6 +47,7 @@ export default function ImoveisPage() {
   const [maisAberto, setMaisAberto] = useState(false);
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [view, setView] = useState<"lista" | "mapa">("lista");
+  const [geocodingProgress, setGeocodingProgress] = useState<string | null>(null);
 
   // Filtros
   const [tipo, setTipo] = useState("todos");
@@ -137,6 +138,45 @@ export default function ImoveisPage() {
     await supabase.from("galpoes").update({ publicado: !atual }).eq("id", id);
   }
 
+  async function geocodificarTodos() {
+    const semCoordenadas = galpoes.filter((g) => !g.latitude || !g.longitude);
+    if (semCoordenadas.length === 0) {
+      setGeocodingProgress("Todos os imóveis já têm coordenadas.");
+      setTimeout(() => setGeocodingProgress(null), 3000);
+      return;
+    }
+
+    const supabase = createClient();
+    for (let i = 0; i < semCoordenadas.length; i++) {
+      const g = semCoordenadas[i];
+      setGeocodingProgress(`Geocodificando ${i + 1}/${semCoordenadas.length}: ${g.titulo}...`);
+
+      try {
+        const params = new URLSearchParams({
+          endereco: g.endereco ?? "",
+          bairro: g.bairro ?? "",
+          cidade: g.cidade ?? "",
+        });
+        const res = await fetch(`/api/geocode?${params}`);
+        if (res.ok) {
+          const { lat, lng } = await res.json();
+          if (lat && lng) {
+            await supabase.from("galpoes").update({ latitude: lat, longitude: lng }).eq("id", g.id);
+            setGalpoes((prev) => prev.map((p) => p.id === g.id ? { ...p, latitude: lat, longitude: lng } : p));
+          }
+        }
+      } catch {
+        // ignora erro individual
+      }
+
+      // Nominatim: máx 1 req/s
+      if (i < semCoordenadas.length - 1) await new Promise((r) => setTimeout(r, 1100));
+    }
+
+    setGeocodingProgress(`Concluído! ${semCoordenadas.length} imóvel(is) processado(s).`);
+    setTimeout(() => setGeocodingProgress(null), 4000);
+  }
+
   async function excluir(id: string) {
     const supabase = createClient();
     await supabase.from("galpoes").delete().eq("id", id);
@@ -158,6 +198,15 @@ export default function ImoveisPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Geocodificar todos */}
+          <button
+            onClick={geocodificarTodos}
+            disabled={!!geocodingProgress}
+            className="border border-gray-200 text-gray-500 px-3 py-1.5 text-xs hover:border-gray-400 hover:text-gray-900 transition-colors disabled:opacity-40"
+          >
+            {geocodingProgress ?? "Geocodificar todos"}
+          </button>
+
           {/* Vista lista / mapa */}
           <div className="flex border border-gray-200">
             <button
