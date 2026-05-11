@@ -43,7 +43,7 @@ export default function PublicHeader() {
         </nav>
 
         <a
-          href="https://wa.me/5511999999999"
+          href="https://wa.me/5511995571212"
           className="text-sm bg-gray-900 text-white px-4 py-2 hover:bg-gray-700 transition-colors"
         >
           Fale Conosco

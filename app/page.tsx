@@ -197,14 +197,14 @@ export default async function Home() {
               Atendemos empresas que buscam galpoes para locacao ou compra, e proprietarios que desejam comercializar seus imoveis com seguranca e agilidade.
             </p>
             <div className="mt-8 space-y-4 text-sm text-gray-600">
-              <p><span className="font-medium text-gray-900">WhatsApp</span> — (11) 99999-9999</p>
+              <p><span className="font-medium text-gray-900">WhatsApp</span> — (11) 99557-1212</p>
               <p><span className="font-medium text-gray-900">E-mail</span> — contato@petrusimóveis.com.br</p>
               <p><span className="font-medium text-gray-900">CRECI-SP</span> — 000000-F</p>
             </div>
           </div>
           <div className="flex flex-col justify-center gap-4">
             <a
-              href="https://wa.me/5511999999999"
+              href="https://wa.me/5511995571212"
               className="block text-center bg-gray-900 text-white px-8 py-4 text-sm font-medium hover:bg-gray-700 transition-colors"
             >
               Conversar pelo WhatsApp

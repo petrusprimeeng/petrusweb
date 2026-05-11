@@ -102,7 +102,7 @@ export function PDFRelatorio({
           </View>
           <View style={styles.headerRight}>
             <Text>CRECI-SP 000000-F</Text>
-            <Text>(11) 99999-9999</Text>
+            <Text>(11) 99557-1212</Text>
             <Text>Emitido em {agora}</Text>
           </View>
         </View>

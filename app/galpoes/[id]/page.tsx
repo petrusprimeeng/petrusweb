@@ -45,7 +45,7 @@ export default async function GalpaoPage({ params }: { params: Promise<{ id: str
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <Link href="/" className="text-lg font-semibold tracking-tight text-gray-900">Petrus Imóveis</Link>
           <a
-            href="https://wa.me/5511999999999"
+            href="https://wa.me/5511995571212"
             className="text-sm bg-gray-900 text-white px-4 py-2 hover:bg-gray-700 transition-colors"
           >
             Fale Conosco
@@ -82,7 +82,7 @@ export default async function GalpaoPage({ params }: { params: Promise<{ id: str
 
               <div className="mt-6 space-y-3">
                 <a
-                  href={`https://wa.me/5511999999999?text=Olá, tenho interesse no imóvel: ${encodeURIComponent(g.titulo)}`}
+                  href={`https://wa.me/5511995571212?text=Olá, tenho interesse no imóvel: ${encodeURIComponent(g.titulo)}`}
                   className="block text-center bg-gray-900 text-white px-6 py-3 text-sm font-medium hover:bg-gray-700 transition-colors"
                 >
                   Consultar pelo WhatsApp
