@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase-server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import LeadForm from "./LeadForm";
 
 export default async function GalpaoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -98,6 +99,8 @@ export default async function GalpaoPage({ params }: { params: Promise<{ id: str
               <p className="mt-6 text-xs text-gray-400 text-center">
                 Atendimento direto com o corretor
               </p>
+
+              <LeadForm galpaoId={g.id} galpaoTitulo={g.titulo} />
             </div>
           </div>
 
