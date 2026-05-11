@@ -117,7 +117,7 @@ export default function ConsultaPage() {
           <p className="text-sm text-gray-400 mt-0.5">{filtrados.length} galpão{filtrados.length !== 1 ? "s" : ""} encontrado{filtrados.length !== 1 ? "s" : ""}</p>
         </div>
         <PDFDownloadLink
-          document={<PDFRelatorio galpoes={filtrados} filtros={filtrosParaPDF} supabaseUrl={supabaseUrl} />}
+          document={<PDFRelatorio galpoes={filtrados} filtros={filtrosParaPDF} supabaseUrl={supabaseUrl} baseUrl={typeof window !== "undefined" ? window.location.origin : ""} />}
           fileName={`petrus-imoveis-consulta-${new Date().toISOString().slice(0, 10)}.pdf`}
         >
           {({ loading: pdfLoading }) => (

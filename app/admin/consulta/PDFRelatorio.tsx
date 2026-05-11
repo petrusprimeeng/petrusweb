@@ -80,7 +80,7 @@ type Galpao = {
   galpao_imagens: { storage_path: string; ordem: number }[];
 };
 
-function buildMapUrl(galpoes: Galpao[]): string | null {
+function buildMapUrl(galpoes: Galpao[], baseUrl: string): string | null {
   const comCoordenadas = galpoes.filter((g) => g.latitude && g.longitude);
   if (comCoordenadas.length === 0) return null;
 
@@ -93,7 +93,14 @@ function buildMapUrl(galpoes: Galpao[]): string | null {
     .map((g) => `${g.latitude},${g.longitude},ol-marker`)
     .join("|");
 
-  return `https://staticmap.openstreetmap.de/staticmap.php?center=${centerLat},${centerLng}&zoom=13&size=600x250&markers=${markers}`;
+  const params = new URLSearchParams({
+    center: `${centerLat},${centerLng}`,
+    zoom: "13",
+    size: "600x250",
+    markers,
+  });
+
+  return `${baseUrl}/api/staticmap?${params}`;
 }
 
 type Filtros = Record<string, string>;
@@ -105,10 +112,12 @@ export function PDFRelatorio({
   galpoes,
   filtros,
   supabaseUrl,
+  baseUrl,
 }: {
   galpoes: Galpao[];
   filtros: Filtros;
   supabaseUrl: string;
+  baseUrl: string;
 }) {
   const agora = new Date().toLocaleDateString("pt-BR", {
     day: "2-digit", month: "long", year: "numeric",
@@ -148,7 +157,7 @@ export function PDFRelatorio({
 
         {/* Mapa de localização */}
         {(() => {
-          const mapUrl = buildMapUrl(galpoes);
+          const mapUrl = buildMapUrl(galpoes, baseUrl);
           if (!mapUrl) return null;
           const comCoordenadas = galpoes.filter((g) => g.latitude && g.longitude).length;
           return (

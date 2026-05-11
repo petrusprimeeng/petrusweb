@@ -223,7 +223,7 @@ export default function ImoveisPage() {
             </button>
           </div>
           <PDFDownloadLink
-            document={<PDFRelatorio galpoes={filtrados} filtros={filtrosAtivos} supabaseUrl={supabaseUrl} />}
+            document={<PDFRelatorio galpoes={filtrados} filtros={filtrosAtivos} supabaseUrl={supabaseUrl} baseUrl={typeof window !== "undefined" ? window.location.origin : ""} />}
             fileName={`petrus-imoveis-${new Date().toISOString().slice(0, 10)}.pdf`}
           >
             {({ loading: l }) => (
