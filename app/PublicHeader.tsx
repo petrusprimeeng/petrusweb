@@ -42,12 +42,20 @@ export default function PublicHeader() {
           ))}
         </nav>
 
-        <a
-          href="https://wa.me/5511995571212?text=Olá%2C%20vim%20pelo%20site%20da%20Petrus%20Imóveis%20e%20gostaria%20de%20informações."
-          className="text-sm bg-gray-900 text-white px-4 py-2 hover:bg-gray-700 transition-colors"
-        >
-          Fale Conosco
-        </a>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/login"
+            className="hidden sm:block text-xs text-gray-400 hover:text-gray-900 transition-colors"
+          >
+            Área do corretor
+          </Link>
+          <a
+            href="https://wa.me/5511995571212?text=Olá%2C%20vim%20pelo%20site%20da%20Petrus%20Imóveis%20e%20gostaria%20de%20informações."
+            className="text-sm bg-gray-900 text-white px-4 py-2 hover:bg-gray-700 transition-colors"
+          >
+            Fale Conosco
+          </a>
+        </div>
       </div>
 
       {/* Mobile nav dropdown */}
@@ -58,11 +66,18 @@ export default function PublicHeader() {
               key={l.href}
               href={l.href}
               onClick={() => setOpen(false)}
-              className="block px-6 py-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
+              className="block px-6 py-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-100"
             >
               {l.label}
             </a>
           ))}
+          <Link
+            href="/login"
+            onClick={() => setOpen(false)}
+            className="block px-6 py-3 text-sm text-gray-400 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+          >
+            Área do corretor
+          </Link>
         </div>
       )}
     </header>
