@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase-browser";
 
 type Props = {
   galpaoId: string;
@@ -21,18 +20,21 @@ export default function LeadForm({ galpaoId, galpaoTitulo }: Props) {
     setErro("");
     setLoading(true);
 
-    const supabase = createClient();
-    const { error } = await supabase.from("leads").insert({
-      nome: nome.trim(),
-      telefone: telefone.trim(),
-      empresa: empresa.trim() || null,
-      galpao_id: galpaoId,
-      galpao_titulo: galpaoTitulo,
+    const res = await fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nome,
+        telefone,
+        empresa,
+        galpao_id: galpaoId,
+        galpao_titulo: galpaoTitulo,
+      }),
     });
 
     setLoading(false);
 
-    if (error) {
+    if (!res.ok) {
       setErro("Erro ao enviar. Tente pelo WhatsApp.");
       return;
     }
