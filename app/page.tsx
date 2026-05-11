@@ -1,4 +1,21 @@
-export default function Home() {
+import { createClient } from "@/lib/supabase-server";
+import Link from "next/link";
+
+export default async function Home() {
+  const supabase = await createClient();
+
+  const { data: galpoes } = await supabase
+    .from("galpoes")
+    .select(`
+      id, titulo, tipo, valor, cidade, bairro,
+      area_construida_m2, pe_direito_m, numero_docas, acesso_carreta, descricao,
+      galpao_imagens (storage_path, ordem)
+    `)
+    .eq("publicado", true)
+    .order("created_at", { ascending: false });
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
 
@@ -10,9 +27,9 @@ export default function Home() {
             <span className="ml-3 text-sm text-gray-400 hidden sm:inline">Galpões Industriais</span>
           </div>
           <nav className="hidden md:flex items-center gap-8 text-sm text-gray-600">
+            <a href="#imoveis" className="hover:text-gray-900 transition-colors">Imóveis</a>
             <a href="#servicos" className="hover:text-gray-900 transition-colors">Servicos</a>
             <a href="#sobre" className="hover:text-gray-900 transition-colors">Sobre</a>
-            <a href="#regiao" className="hover:text-gray-900 transition-colors">Regiao de Atuacao</a>
             <a href="#contato" className="hover:text-gray-900 transition-colors">Contato</a>
           </nav>
           <a
@@ -69,6 +86,60 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* Imoveis Publicados */}
+      {galpoes && galpoes.length > 0 && (
+        <section id="imoveis" className="py-24 bg-white border-t border-gray-200">
+          <div className="max-w-6xl mx-auto px-6">
+            <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mb-4">Disponíveis</p>
+            <h2 className="text-3xl font-semibold text-gray-900">Imóveis em carteira</h2>
+            <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {galpoes.map((g) => {
+                const imagens = (g.galpao_imagens as { storage_path: string; ordem: number }[]) ?? [];
+                const sorted = [...imagens].sort((a, b) => a.ordem - b.ordem);
+                const capa = sorted[0];
+                const tipoLabel = g.tipo === "venda" ? "Venda" : g.tipo === "locacao" ? "Locação" : "Venda / Locação";
+
+                return (
+                  <Link key={g.id} href={`/galpoes/${g.id}`} className="group border border-gray-200 hover:border-gray-400 transition-colors">
+                    <div className="bg-gray-100 h-48 overflow-hidden">
+                      {capa ? (
+                        <img
+                          src={`${supabaseUrl}/storage/v1/object/public/galpoes/${capa.storage_path}`}
+                          alt={g.titulo}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">Sem foto</div>
+                      )}
+                    </div>
+                    <div className="p-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{tipoLabel}</span>
+                        {g.valor && (
+                          <span className="text-xs text-gray-500">
+                            R$ {Number(g.valor).toLocaleString("pt-BR")}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-sm font-semibold text-gray-900">{g.titulo}</h3>
+                      <p className="text-xs text-gray-400 mt-1">{g.bairro ? `${g.bairro}, ` : ""}{g.cidade}</p>
+                      <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-500">
+                        {g.area_construida_m2 && <span>{g.area_construida_m2} m²</span>}
+                        {g.pe_direito_m && <span>Pé direito {g.pe_direito_m}m</span>}
+                        {g.numero_docas > 0 && <span>{g.numero_docas} doca{g.numero_docas > 1 ? "s" : ""}</span>}
+                        {g.acesso_carreta && <span>Acesso carreta</span>}
+                      </div>
+                      <p className="mt-3 text-xs text-gray-400 line-clamp-2">{g.descricao}</p>
+                      <p className="mt-4 text-xs font-medium text-gray-900 group-hover:underline">Ver detalhes</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Servicos */}
       <section id="servicos" className="py-24 bg-white">
