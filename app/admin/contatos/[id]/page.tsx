@@ -85,7 +85,7 @@ export default function ContatoDetalhePage() {
         pc
           .filter((row) => row.processos)
           .map((row) => ({
-            ...(row.processos as { id: string; titulo: string; tipo: string; status: string }),
+            ...(row.processos as unknown as { id: string; titulo: string; tipo: string; status: string }),
             papel: row.papel,
           }))
       );
