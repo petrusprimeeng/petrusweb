@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 type Props = {
+  filtroCategoria: string; setFiltroCategoria: (v: string) => void;
   tipo: string; setTipo: (v: string) => void;
   cidade: string; setCidade: (v: string) => void;
   cidades: string[];
@@ -23,6 +24,7 @@ type Props = {
 const sel = "border border-gray-300 px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus:border-gray-900 bg-white";
 
 export default function GalpaoFiltros({
+  filtroCategoria, setFiltroCategoria,
   tipo, setTipo, cidade, setCidade, cidades,
   areaMin, setAreaMin, areaMax, setAreaMax,
   valorMin, setValorMin, valorMax, setValorMax,
@@ -65,7 +67,17 @@ export default function GalpaoFiltros({
         <div className="px-4 pb-4 border-t border-gray-100 pt-4 space-y-4">
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Tipo</label>
+              <label className="text-xs text-gray-500">Categoria</label>
+              <select className={sel} value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}>
+                <option value="todos">Todos</option>
+                <option value="galpao">Galpão</option>
+                <option value="loja">Loja</option>
+                <option value="terreno">Terreno</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">Negócio</label>
               <select className={sel} value={tipo} onChange={(e) => setTipo(e.target.value)}>
                 <option value="todos">Todos</option>
                 <option value="locacao">Locação</option>

@@ -27,6 +27,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 export default function ImoveisPage() {
   const {
     loading, deletingId, setDeletingId, geocodingProgress,
+    filtroCategoria, setFiltroCategoria,
     tipo, setTipo, cidade, setCidade, cidades,
     areaMin, setAreaMin, areaMax, setAreaMax,
     valorMin, setValorMin, valorMax, setValorMax,
@@ -108,6 +109,7 @@ export default function ImoveisPage() {
 
       {/* Filtros */}
       <GalpaoFiltros
+        filtroCategoria={filtroCategoria} setFiltroCategoria={setFiltroCategoria}
         tipo={tipo} setTipo={setTipo}
         cidade={cidade} setCidade={setCidade}
         cidades={cidades}

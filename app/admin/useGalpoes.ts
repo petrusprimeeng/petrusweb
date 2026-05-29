@@ -7,6 +7,8 @@ export type Galpao = {
   id: string;
   titulo: string;
   tipo: string;
+  categoria: string;
+  uso_terreno: string | null;
   valor: number | null;
   cidade: string;
   bairro: string | null;
@@ -34,6 +36,7 @@ export function useGalpoes() {
   const [geocodingProgress, setGeocodingProgress] = useState<string | null>(null);
 
   // Filtros
+  const [filtroCategoria, setFiltroCategoria] = useState("todos");
   const [tipo, setTipo] = useState("todos");
   const [cidade, setCidade] = useState("todas");
   const [areaMin, setAreaMin] = useState("");
@@ -52,7 +55,7 @@ export function useGalpoes() {
     const supabase = createClient();
     const { data } = await supabase
       .from("galpoes")
-      .select(`id, titulo, tipo, valor, cidade, bairro, endereco, publicado,
+      .select(`id, titulo, tipo, categoria, uso_terreno, valor, cidade, bairro, endereco, publicado,
         area_construida_m2, area_total_m2, pe_direito_m, numero_docas,
         acesso_carreta, sprinklers, guarita, potencia_eletrica_kva,
         vagas_estacionamento, descricao, latitude, longitude,
@@ -69,6 +72,7 @@ export function useGalpoes() {
 
   const filtrados = useMemo(() => {
     return galpoes.filter((g) => {
+      if (filtroCategoria !== "todos" && g.categoria !== filtroCategoria) return false;
       if (tipo !== "todos" && g.tipo !== tipo) return false;
       if (cidade !== "todas" && g.cidade !== cidade) return false;
       if (soPublicados && !g.publicado) return false;
@@ -82,7 +86,7 @@ export function useGalpoes() {
       if (docasMin && (g.numero_docas ?? 0) < Number(docasMin)) return false;
       return true;
     });
-  }, [galpoes, tipo, cidade, soPublicados, comCarreta, comSprinkler, comGuarita, areaMin, areaMax, valorMin, valorMax, docasMin]);
+  }, [galpoes, filtroCategoria, tipo, cidade, soPublicados, comCarreta, comSprinkler, comGuarita, areaMin, areaMax, valorMin, valorMax, docasMin]);
 
   const stats = useMemo(() => ({
     total: galpoes.length,
@@ -92,6 +96,7 @@ export function useGalpoes() {
 
   const filtrosAtivos = useMemo(() => {
     const f: Record<string, string> = {};
+    if (filtroCategoria !== "todos") f["Categoria"] = filtroCategoria === "galpao" ? "Galpão" : filtroCategoria === "loja" ? "Loja" : "Terreno";
     if (tipo !== "todos") f["Tipo"] = tipo === "venda" ? "Venda" : tipo === "locacao" ? "Locação" : "Venda/Locação";
     if (cidade !== "todas") f["Cidade"] = cidade;
     if (areaMin) f["Área mín."] = `${areaMin} m²`;
@@ -104,13 +109,13 @@ export function useGalpoes() {
     if (comSprinkler) f["Sprinklers"] = "Sim";
     if (comGuarita) f["Guarita"] = "Sim";
     return f;
-  }, [tipo, cidade, areaMin, areaMax, valorMin, valorMax, docasMin, soPublicados, comCarreta, comSprinkler, comGuarita]);
+  }, [filtroCategoria, tipo, cidade, areaMin, areaMax, valorMin, valorMax, docasMin, soPublicados, comCarreta, comSprinkler, comGuarita]);
 
   const temFiltro = Object.keys(filtrosAtivos).length > 0;
 
   function limpar() {
-    setTipo("todos"); setCidade("todas"); setAreaMin(""); setAreaMax("");
-    setValorMin(""); setValorMax(""); setDocasMin("");
+    setFiltroCategoria("todos"); setTipo("todos"); setCidade("todas");
+    setAreaMin(""); setAreaMax(""); setValorMin(""); setValorMax(""); setDocasMin("");
     setSoPublicados(false); setComCarreta(false); setComSprinkler(false); setComGuarita(false);
   }
 
@@ -167,6 +172,7 @@ export function useGalpoes() {
 
   return {
     galpoes, loading, deletingId, setDeletingId, geocodingProgress,
+    filtroCategoria, setFiltroCategoria,
     tipo, setTipo, cidade, setCidade, cidades,
     areaMin, setAreaMin, areaMax, setAreaMax,
     valorMin, setValorMin, valorMax, setValorMax,

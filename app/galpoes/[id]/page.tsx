@@ -21,8 +21,13 @@ export default async function GalpaoPage({ params }: { params: Promise<{ id: str
   const imagens = ([...(g.galpao_imagens ?? [])]).sort((a: { ordem: number }, b: { ordem: number }) => a.ordem - b.ordem);
   const tipoLabel = g.tipo === "venda" ? "Venda" : g.tipo === "locacao" ? "Locação" : "Venda / Locação";
 
+  const categoriaLabel = g.categoria === "loja" ? "Loja" : g.categoria === "terreno" ? "Terreno" : "Galpão";
+  const usoTerrenoLabel = g.uso_terreno === "galpao" ? "Para galpão" : g.uso_terreno === "loja" ? "Para loja" : g.uso_terreno === "ambos" ? "Galpão e loja" : null;
+
   const fichaItems = [
-    { label: "Tipo", value: tipoLabel },
+    { label: "Categoria", value: categoriaLabel },
+    { label: "Uso indicado", value: usoTerrenoLabel },
+    { label: "Negócio", value: tipoLabel },
     { label: "Cidade", value: g.cidade },
     { label: "Bairro", value: g.bairro },
     { label: "Endereço", value: g.endereco },

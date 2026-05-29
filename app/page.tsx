@@ -8,8 +8,9 @@ export default async function Home() {
   const { data: galpoes } = await supabase
     .from("galpoes")
     .select(`
-      id, titulo, tipo, valor, cidade, bairro,
-      area_construida_m2, pe_direito_m, numero_docas, acesso_carreta, descricao,
+      id, titulo, tipo, categoria, uso_terreno, valor, cidade, bairro,
+      area_construida_m2, area_total_m2, pe_direito_m, numero_docas,
+      acesso_carreta, vagas_estacionamento, descricao,
       galpao_imagens (storage_path, ordem)
     `)
     .eq("publicado", true)

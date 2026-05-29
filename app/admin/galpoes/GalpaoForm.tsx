@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase-browser";
 type Galpao = {
   id?: string;
   titulo: string;
+  categoria: string;
+  uso_terreno: string;
   tipo: string;
   valor: string;
   endereco: string;
@@ -30,7 +32,7 @@ type Galpao = {
 };
 
 const empty: Galpao = {
-  titulo: "", tipo: "locacao", valor: "", endereco: "", bairro: "",
+  titulo: "", categoria: "galpao", uso_terreno: "", tipo: "locacao", valor: "", endereco: "", bairro: "",
   cidade: "Barueri", cep: "", area_total_m2: "", area_construida_m2: "",
   area_piso_m2: "", pe_direito_m: "", numero_docas: "0", acesso_carreta: false,
   potencia_eletrica_kva: "", sprinklers: false, guarita: false,
@@ -63,6 +65,8 @@ export default function GalpaoForm({ initial, imagens }: {
     const supabase = createClient();
     const payload = {
       titulo: form.titulo,
+      categoria: form.categoria,
+      uso_terreno: form.categoria === "terreno" && form.uso_terreno ? form.uso_terreno : null,
       tipo: form.tipo,
       valor: form.valor ? Number(form.valor) : null,
       endereco: form.endereco,
@@ -167,7 +171,24 @@ export default function GalpaoForm({ initial, imagens }: {
               <input className={inputClass} value={form.titulo} onChange={(e) => set("titulo", e.target.value)} required />
             </Field>
           </div>
-          <Field label="Tipo *">
+          <Field label="Categoria *">
+            <select className={inputClass} value={form.categoria} onChange={(e) => set("categoria", e.target.value)}>
+              <option value="galpao">Galpão</option>
+              <option value="loja">Loja</option>
+              <option value="terreno">Terreno</option>
+            </select>
+          </Field>
+          {form.categoria === "terreno" && (
+            <Field label="Uso do terreno">
+              <select className={inputClass} value={form.uso_terreno} onChange={(e) => set("uso_terreno", e.target.value)}>
+                <option value="">Não especificado</option>
+                <option value="galpao">Para Galpão</option>
+                <option value="loja">Para Loja</option>
+                <option value="ambos">Galpão e Loja</option>
+              </select>
+            </Field>
+          )}
+          <Field label="Negócio *">
             <select className={inputClass} value={form.tipo} onChange={(e) => set("tipo", e.target.value)}>
               <option value="locacao">Locação</option>
               <option value="venda">Venda</option>
