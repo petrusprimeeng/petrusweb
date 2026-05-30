@@ -77,7 +77,7 @@ type Galpao = {
   descricao: string | null;
   latitude: number | null;
   longitude: number | null;
-  galpao_imagens: { storage_path: string; ordem: number }[];
+  galpao_imagens: { storage_path: string; ordem: number; is_capa?: boolean }[];
 };
 
 function buildMapUrl(galpoes: Galpao[], baseUrl: string): string | null {
@@ -179,7 +179,7 @@ export function PDFRelatorio({
         ) : (
           galpoes.map((g) => {
             const imgs = [...g.galpao_imagens].sort((a, b) => a.ordem - b.ordem);
-            const capa = imgs[0];
+            const capa = imgs.find((i) => i.is_capa) ?? imgs[0];
             const imgUrl = capa ? `${supabaseUrl}/storage/v1/object/public/galpoes/${capa.storage_path}` : null;
 
             const ficha = [

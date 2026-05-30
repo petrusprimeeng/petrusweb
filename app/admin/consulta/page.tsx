@@ -31,7 +31,7 @@ type Galpao = {
   descricao: string | null;
   latitude: number | null;
   longitude: number | null;
-  galpao_imagens: { storage_path: string; ordem: number }[];
+  galpao_imagens: { storage_path: string; ordem: number; is_capa?: boolean }[];
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -62,7 +62,7 @@ export default function ConsultaPage() {
           area_construida_m2, area_total_m2, pe_direito_m, numero_docas,
           acesso_carreta, sprinklers, guarita, potencia_eletrica_kva,
           vagas_estacionamento, descricao, latitude, longitude,
-          galpao_imagens (storage_path, ordem)`)
+          galpao_imagens (storage_path, ordem, is_capa)`)
         .order("created_at", { ascending: false });
       setGalpoes(data ?? []);
       setLoading(false);
@@ -210,7 +210,7 @@ export default function ConsultaPage() {
             <div className="space-y-3">
               {filtrados.map((g) => {
                 const imgs = [...g.galpao_imagens].sort((a, b) => a.ordem - b.ordem);
-                const capa = imgs[0];
+                const capa = imgs.find((i) => i.is_capa) ?? imgs[0];
                 return (
                   <div key={g.id} className="bg-white border border-gray-200 flex overflow-hidden">
                     <div className="w-32 h-24 bg-gray-100 shrink-0">
