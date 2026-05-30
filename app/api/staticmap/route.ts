@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const ALLOWED_PARAMS = new Set(["center", "zoom", "size", "markers", "maptype"]);
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const params = searchParams.toString();
-  const url = `https://staticmap.openstreetmap.de/staticmap.php?${params}`;
+
+  // Apenas parâmetros conhecidos são repassados ao serviço externo
+  const safe = new URLSearchParams();
+  for (const [key, value] of searchParams.entries()) {
+    if (ALLOWED_PARAMS.has(key)) {
+      safe.append(key, value);
+    }
+  }
+
+  if (!safe.has("center") || !safe.has("zoom") || !safe.has("size")) {
+    return new NextResponse(null, { status: 400 });
+  }
+
+  const url = `https://staticmap.openstreetmap.de/staticmap.php?${safe.toString()}`;
 
   const res = await fetch(url, {
     headers: {
@@ -20,6 +34,7 @@ export async function GET(req: NextRequest) {
     headers: {
       "Content-Type": "image/png",
       "Cache-Control": "public, max-age=3600",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }
