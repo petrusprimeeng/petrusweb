@@ -49,6 +49,7 @@ export default function ImoveisPage() {
   const [galpaoPreview, setGalpaoPreview] = useState<Galpao | null>(null);
 
   return (
+    <>
     <div className="space-y-5">
 
       {/* Topo */}
@@ -186,5 +187,6 @@ export default function ImoveisPage() {
         onClose={() => setGalpaoPreview(null)}
       />
     )}
+    </>
   );
 }
