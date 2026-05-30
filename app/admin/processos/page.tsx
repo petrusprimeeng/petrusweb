@@ -124,8 +124,8 @@ export default function ProcessosPage() {
       .eq("slug", tipo)
       .single();
 
-    if (templateTipo?.processo_tipo_categorias?.length > 0) {
-      const categorias = (templateTipo.processo_tipo_categorias as any[])
+    if ((templateTipo?.processo_tipo_categorias?.length ?? 0) > 0) {
+      const categorias = (templateTipo!.processo_tipo_categorias as any[])
         .sort((a, b) => a.ordem - b.ordem);
 
       // Insere categorias do processo
