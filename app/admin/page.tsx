@@ -4,8 +4,11 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useGalpoes } from "./useGalpoes";
+import type { Galpao } from "./useGalpoes";
 import GalpaoRow from "./GalpaoRow";
 import GalpaoFiltros from "./GalpaoFiltros";
+import GalpaoDetalheModal from "./GalpaoDetalheModal";
+import GalpaoPreviewModal from "./GalpaoPreviewModal";
 import { PDFRelatorio } from "./consulta/PDFRelatorio";
 
 const MapaGalpoes = dynamic(() => import("./MapaGalpoes"), {
@@ -38,9 +41,12 @@ export default function ImoveisPage() {
     comGuarita, setComGuarita,
     filtrados, stats, filtrosAtivos, temFiltro,
     limpar, togglePublicado, geocodificarTodos, excluir,
+    configCampos,
   } = useGalpoes();
 
   const [view, setView] = useState<"lista" | "mapa">("lista");
+  const [galpaoDetalhe, setGalpaoDetalhe] = useState<Galpao | null>(null);
+  const [galpaoPreview, setGalpaoPreview] = useState<Galpao | null>(null);
 
   return (
     <div className="space-y-5">
@@ -157,10 +163,28 @@ export default function ImoveisPage() {
               onStartDelete={setDeletingId}
               onConfirmDelete={excluir}
               onCancelDelete={() => setDeletingId(null)}
+              onOpenDetalhe={setGalpaoDetalhe}
+              onOpenPreview={setGalpaoPreview}
             />
           ))}
         </div>
       )}
     </div>
+
+    {/* Modais */}
+    {galpaoDetalhe && (
+      <GalpaoDetalheModal
+        galpao={galpaoDetalhe}
+        onClose={() => setGalpaoDetalhe(null)}
+        onOpenPreview={() => setGalpaoPreview(galpaoDetalhe)}
+      />
+    )}
+    {galpaoPreview && (
+      <GalpaoPreviewModal
+        galpao={galpaoPreview}
+        configCampos={configCampos}
+        onClose={() => setGalpaoPreview(null)}
+      />
+    )}
   );
 }
