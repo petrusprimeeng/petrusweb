@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import LeadForm from "./LeadForm";
+import GalpoesGrid from "@/app/GalpoesGrid";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.alphamixgalpoes.com.br";
 
@@ -64,8 +65,15 @@ export async function generateMetadata(
   };
 }
 
-export default async function GalpaoPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function GalpaoPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ categoria?: string; negocio?: string; cidade?: string }>;
+}) {
   const { id } = await params;
+  const sp = await searchParams;
   const supabase = await createClient();
 
   const { data: g } = await supabase
@@ -76,6 +84,12 @@ export default async function GalpaoPage({ params }: { params: Promise<{ id: str
     .single();
 
   if (!g) notFound();
+
+  const { data: todosGalpoes } = await supabase
+    .from("galpoes")
+    .select("id, titulo, tipo, categoria, uso_terreno, valor, cidade, bairro, area_construida_m2, area_total_m2, pe_direito_m, numero_docas, acesso_carreta, vagas_estacionamento, descricao, galpao_imagens(storage_path, ordem)")
+    .eq("publicado", true)
+    .order("updated_at", { ascending: false });
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const imagens = ([...(g.galpao_imagens ?? [])]).sort((a: { ordem: number }, b: { ordem: number }) => a.ordem - b.ordem);
@@ -269,6 +283,19 @@ export default async function GalpaoPage({ params }: { params: Promise<{ id: str
           </div>
 
         </div>
+      </div>
+
+      {/* Continue sua busca */}
+      <div className="mt-16 pt-10 border-t border-gray-200">
+        <h2 className="text-base font-semibold text-gray-900 mb-2">Continue sua busca</h2>
+        <GalpoesGrid
+          galpoes={(todosGalpoes ?? []) as Parameters<typeof GalpoesGrid>[0]["galpoes"]}
+          supabaseUrl={supabaseUrl!}
+          initialCategoria={sp.categoria as "galpao" | "loja" | "terreno" | undefined}
+          initialNegocio={sp.negocio as "todos" | "venda" | "locacao" | undefined}
+          initialCidade={sp.cidade}
+          excludeId={id}
+        />
       </div>
 
       {/* Footer */}
