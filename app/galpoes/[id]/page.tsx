@@ -283,7 +283,6 @@ export default async function GalpaoPage({
           </div>
 
         </div>
-      </div>
 
       {/* Continue sua busca */}
       <div className="mt-16 pt-10 border-t border-gray-200">
@@ -296,6 +295,7 @@ export default async function GalpaoPage({
           initialCidade={sp.cidade}
           excludeId={id}
         />
+      </div>
       </div>
 
       {/* Footer */}
