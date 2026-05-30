@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
 export async function GET(req: NextRequest) {
+  // Apenas usuários autenticados podem geocodificar
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => req.cookies.getAll(),
+        setAll: () => {},
+      },
+    }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const endereco = searchParams.get("endereco") ?? "";
   const bairro = searchParams.get("bairro") ?? "";
