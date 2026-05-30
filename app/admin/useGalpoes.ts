@@ -33,7 +33,7 @@ export type Galpao = {
   campos_visibilidade: Record<string, { card: boolean; ficha: boolean }>;
   latitude: number | null;
   longitude: number | null;
-  galpao_imagens: { id: string; storage_path: string; ordem: number }[];
+  galpao_imagens: { id: string; storage_path: string; ordem: number; visivel_site: boolean; is_capa: boolean }[];
 };
 
 export function useGalpoes() {
@@ -69,7 +69,7 @@ export function useGalpoes() {
           acesso_carreta, sprinklers, guarita, potencia_eletrica_kva,
           vagas_estacionamento, condominio, valor_condominio, descricao, observacoes,
           campos_visibilidade, latitude, longitude,
-          galpao_imagens (id, storage_path, ordem)`)
+          galpao_imagens (id, storage_path, ordem, visivel_site, is_capa)`)
         .order("created_at", { ascending: false }),
       supabase.from("config_campos").select("*").order("label"),
     ]);

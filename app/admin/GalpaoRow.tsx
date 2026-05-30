@@ -30,7 +30,7 @@ export default function GalpaoRow({
   onOpenPreview,
 }: Props) {
   const imgs = [...g.galpao_imagens].sort((a, b) => a.ordem - b.ordem);
-  const capa = imgs[0];
+  const capa = imgs.find((i) => i.is_capa) ?? imgs[0];
 
   return (
     <div className="flex items-center gap-2 px-4 py-3 hover:bg-gray-50 transition-colors">

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import ImageGallery from "@/app/components/ImageGallery";
 import type { Galpao } from "./useGalpoes";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -81,29 +82,15 @@ export default function GalpaoDetalheModal({ galpao: g, onClose, onOpenPreview }
           </div>
         </div>
 
-        {/* Galeria */}
+        {/* Galeria — todas as imagens (sem filtro de visibilidade) */}
         {imgs.length > 0 && (
           <div className="px-6 pt-5">
-            <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm">
-              <img
-                src={`${supabaseUrl}/storage/v1/object/public/galpoes/${imgs[0].storage_path}`}
-                alt={g.titulo}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            {imgs.length > 1 && (
-              <div className="grid grid-cols-5 gap-2 mt-2">
-                {imgs.slice(1).map((img) => (
-                  <div key={img.id} className="aspect-square bg-gray-100 overflow-hidden rounded-sm">
-                    <img
-                      src={`${supabaseUrl}/storage/v1/object/public/galpoes/${img.storage_path}`}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+            <ImageGallery
+              images={imgs}
+              supabaseUrl={supabaseUrl}
+              alt={g.titulo}
+              initialIndex={Math.max(0, imgs.findIndex((i) => i.is_capa))}
+            />
           </div>
         )}
 

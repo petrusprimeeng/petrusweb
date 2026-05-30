@@ -13,7 +13,7 @@ export default async function Home() {
         id, titulo, tipo, categoria, uso_terreno, valor, cidade, bairro,
         area_construida_m2, area_total_m2, pe_direito_m, numero_docas,
         acesso_carreta, vagas_estacionamento, descricao, campos_visibilidade,
-        galpao_imagens (storage_path, ordem)
+        galpao_imagens (storage_path, ordem, is_capa)
       `)
       .eq("publicado", true)
       .order("created_at", { ascending: false }),

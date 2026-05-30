@@ -16,7 +16,7 @@ export default async function EditarGalpaoPage({ params }: { params: Promise<{ i
 
   const { data: imagens } = await supabase
     .from("galpao_imagens")
-    .select("id, storage_path, ordem")
+    .select("id, storage_path, ordem, visivel_site, is_capa")
     .eq("galpao_id", id)
     .order("ordem");
 

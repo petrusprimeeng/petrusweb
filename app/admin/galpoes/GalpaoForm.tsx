@@ -47,13 +47,21 @@ type WarningInfo = {
   diferentesDopadrao: { label: string; detalhes: string }[];
 };
 
+type ImagemExistente = {
+  id: string;
+  storage_path: string;
+  ordem: number;
+  visivel_site: boolean;
+  is_capa: boolean;
+};
+
 export default function GalpaoForm({
   initial,
   imagens,
   configCampos = [],
 }: {
   initial?: Partial<Galpao> & { id?: string };
-  imagens?: { id: string; storage_path: string; ordem: number }[];
+  imagens?: ImagemExistente[];
   configCampos?: ConfigCampo[];
 }) {
   const router = useRouter();
@@ -62,7 +70,13 @@ export default function GalpaoForm({
     (initial?.campos_visibilidade as OverridesVisibilidade) ?? {}
   );
   const [files, setFiles] = useState<FileList | null>(null);
-  const [existingImagens, setExistingImagens] = useState(imagens ?? []);
+  const [existingImagens, setExistingImagens] = useState<ImagemExistente[]>(
+    (imagens ?? []).map((img) => ({
+      ...img,
+      visivel_site: img.visivel_site ?? true,
+      is_capa: img.is_capa ?? false,
+    }))
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [warningModal, setWarningModal] = useState<WarningInfo | null>(null);
@@ -213,6 +227,20 @@ export default function GalpaoForm({
     await supabase.storage.from("galpoes").remove([path]);
     await supabase.from("galpao_imagens").delete().eq("id", imagemId);
     setExistingImagens((imgs) => imgs.filter((i) => i.id !== imagemId));
+  }
+
+  async function definirCapa(imagemId: string) {
+    if (!form.id) return;
+    const supabase = createClient();
+    await supabase.from("galpao_imagens").update({ is_capa: false }).eq("galpao_id", form.id);
+    await supabase.from("galpao_imagens").update({ is_capa: true }).eq("id", imagemId);
+    setExistingImagens((imgs) => imgs.map((i) => ({ ...i, is_capa: i.id === imagemId })));
+  }
+
+  async function toggleVisibilidadeSite(imagemId: string, atual: boolean) {
+    const supabase = createClient();
+    await supabase.from("galpao_imagens").update({ visivel_site: !atual }).eq("id", imagemId);
+    setExistingImagens((imgs) => imgs.map((i) => i.id === imagemId ? { ...i, visivel_site: !atual } : i));
   }
 
   // ── Componentes auxiliares de campos ────────────────────────────────────────
@@ -426,27 +454,69 @@ export default function GalpaoForm({
         <section>
           <h2 className="text-sm font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Imagens</h2>
           {existingImagens.length > 0 && (
-            <div className="flex flex-wrap gap-3 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
               {existingImagens.map((img) => (
-                <div key={img.id} className="relative group">
-                  <img
-                    src={`${supabaseUrl}/storage/v1/object/public/galpoes/${img.storage_path}`}
-                    alt=""
-                    className="w-24 h-24 object-cover border border-gray-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImagem(img.id, img.storage_path)}
-                    className="absolute top-1 right-1 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    x
-                  </button>
+                <div key={img.id} className="relative border border-gray-200 rounded-sm overflow-hidden">
+                  {/* Thumbnail */}
+                  <div className="relative aspect-video bg-gray-100">
+                    <img
+                      src={`${supabaseUrl}/storage/v1/object/public/galpoes/${img.storage_path}`}
+                      alt=""
+                      className={`w-full h-full object-cover transition-opacity ${img.visivel_site ? "opacity-100" : "opacity-40"}`}
+                    />
+                    {img.is_capa && (
+                      <span className="absolute top-1.5 left-1.5 bg-[#2e3092] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-sm leading-none">
+                        CAPA
+                      </span>
+                    )}
+                    {!img.visivel_site && (
+                      <span className="absolute bottom-1.5 left-1.5 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-sm leading-none">
+                        Oculta
+                      </span>
+                    )}
+                  </div>
+                  {/* Ações */}
+                  <div className="p-2 space-y-1.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleVisibilidadeSite(img.id, img.visivel_site)}
+                      className={`w-full text-[11px] py-1 rounded-sm font-medium transition-colors ${
+                        img.visivel_site
+                          ? "bg-green-100 text-green-700 hover:bg-green-200"
+                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      }`}
+                    >
+                      {img.visivel_site ? "No site" : "Oculta"}
+                    </button>
+                    {form.id && (
+                      <button
+                        type="button"
+                        onClick={() => definirCapa(img.id)}
+                        disabled={img.is_capa}
+                        className={`w-full text-[11px] py-1 rounded-sm transition-colors ${
+                          img.is_capa
+                            ? "bg-[#2e3092] text-white cursor-default"
+                            : "border border-gray-300 text-gray-600 hover:border-gray-500"
+                        }`}
+                      >
+                        {img.is_capa ? "Capa" : "Definir capa"}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeImagem(img.id, img.storage_path)}
+                      className="w-full text-[11px] py-1 rounded-sm text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
           <input type="file" accept="image/*" multiple onChange={(e) => setFiles(e.target.files)} className="text-sm text-gray-600" />
           <p className="mt-1 text-xs text-gray-400">Selecione uma ou mais imagens (JPG, PNG, WEBP)</p>
+          {existingImagens.length === 0 && <p className="mt-2 text-xs text-gray-400">Nenhuma imagem cadastrada.</p>}
         </section>
 
         {error && <p className="text-sm text-red-600">{error}</p>}

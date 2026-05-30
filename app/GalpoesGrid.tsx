@@ -21,7 +21,7 @@ type Galpao = {
   vagas_estacionamento: number;
   descricao: string | null;
   campos_visibilidade?: OverridesVisibilidade;
-  galpao_imagens: { storage_path: string; ordem: number }[];
+  galpao_imagens: { storage_path: string; ordem: number; is_capa?: boolean }[];
 };
 
 type Categoria = "galpao" | "loja" | "terreno";
@@ -286,7 +286,7 @@ export default function GalpoesGrid({
         <div className="mt-6 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtrados.map((g) => {
             const imagens = [...g.galpao_imagens].sort((a, b) => a.ordem - b.ordem);
-            const capa = imagens[0];
+            const capa = imagens.find((i) => i.is_capa) ?? imagens[0];
             const tipoLabel = g.tipo === "venda" ? "Venda" : g.tipo === "locacao" ? "Locação" : "Venda / Locação";
             const tipoBg = g.tipo === "venda"
               ? "bg-[#2e3092] text-white"

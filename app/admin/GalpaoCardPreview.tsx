@@ -13,7 +13,7 @@ type Props = {
 
 export default function GalpaoCardPreview({ galpao: g, configCampos }: Props) {
   const imgs = [...g.galpao_imagens].sort((a, b) => a.ordem - b.ordem);
-  const capa = imgs[0];
+  const capa = imgs.find((i) => i.is_capa) ?? imgs[0];
   const overrides = g.campos_visibilidade ?? {};
 
   const cv = (chave: string) => campoVisivel(chave, "card", configCampos, overrides);
