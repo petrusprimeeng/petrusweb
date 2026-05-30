@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import LeadForm from "./LeadForm";
 import GalpoesGrid from "@/app/GalpoesGrid";
+import ImageGallery from "@/app/components/ImageGallery";
 import { campoVisivel } from "@/lib/visibilidade";
 import type { ConfigCampo, OverridesVisibilidade } from "@/lib/visibilidade";
 
@@ -18,7 +19,7 @@ export async function generateMetadata(
 
   const { data: g } = await supabase
     .from("galpoes")
-    .select("id, titulo, categoria, tipo, cidade, bairro, area_construida_m2, area_total_m2, valor, descricao, galpao_imagens (storage_path, ordem)")
+    .select("id, titulo, categoria, tipo, cidade, bairro, area_construida_m2, area_total_m2, valor, descricao, galpao_imagens (storage_path, ordem, visivel_site, is_capa)")
     .eq("id", id)
     .eq("publicado", true)
     .single();
@@ -36,11 +37,12 @@ export async function generateMetadata(
     : `${categoriaLabel} para ${tipoLabel.toLowerCase()} em ${localLabel}. ${g.area_construida_m2 ? `Área construída: ${g.area_construida_m2} m².` : ""} Atendimento direto com corretor especializado — Alphamix Galpões.`;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const imagens = (g.galpao_imagens ?? []).sort(
+  const todasMetaImagens = (g.galpao_imagens ?? []).sort(
     (a: { ordem: number }, b: { ordem: number }) => a.ordem - b.ordem
-  );
-  const ogImage = imagens[0]
-    ? `${supabaseUrl}/storage/v1/object/public/galpoes/${imagens[0].storage_path}`
+  ).filter((img: { visivel_site?: boolean }) => img.visivel_site !== false);
+  const capaMetaImg = todasMetaImagens.find((img: { is_capa?: boolean }) => img.is_capa) ?? todasMetaImagens[0];
+  const ogImage = capaMetaImg
+    ? `${supabaseUrl}/storage/v1/object/public/galpoes/${capaMetaImg.storage_path}`
     : `${siteUrl}/og-image.png`;
 
   const pageUrl = `${siteUrl}/galpoes/${id}`;
@@ -81,7 +83,7 @@ export default async function GalpaoPage({
   const [{ data: g }, { data: configCampos }] = await Promise.all([
     supabase
       .from("galpoes")
-      .select(`*, galpao_imagens (id, storage_path, ordem)`)
+      .select(`*, galpao_imagens (id, storage_path, ordem, visivel_site, is_capa)`)
       .eq("id", id)
       .eq("publicado", true)
       .single(),
@@ -96,8 +98,10 @@ export default async function GalpaoPage({
     .eq("publicado", true)
     .order("updated_at", { ascending: false });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const imagens = ([...(g.galpao_imagens ?? [])]).sort((a: { ordem: number }, b: { ordem: number }) => a.ordem - b.ordem);
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const todasImagens = ([...(g.galpao_imagens ?? [])]).sort((a: { ordem: number }, b: { ordem: number }) => a.ordem - b.ordem);
+  const imagens = todasImagens.filter((img: { visivel_site?: boolean }) => img.visivel_site !== false);
+  const capaIndex = Math.max(0, imagens.findIndex((img: { is_capa?: boolean }) => img.is_capa));
   const tipoLabel = g.tipo === "venda" ? "Venda" : g.tipo === "locacao" ? "Locação" : "Venda / Locação";
   const categoriaLabel = g.categoria === "loja" ? "Loja" : g.categoria === "terreno" ? "Terreno" : "Galpão";
   const usoTerrenoLabel = g.uso_terreno === "galpao" ? "Para galpão" : g.uso_terreno === "loja" ? "Para loja" : g.uso_terreno === "ambos" ? "Galpão e loja" : null;
@@ -127,8 +131,9 @@ export default async function GalpaoPage({
   ].filter((i): i is { label: string; value: string | null } => i !== null && i.value !== null && i.value !== undefined);
 
   // JSON-LD para a página do imóvel
-  const primeiraImagem = imagens[0]
-    ? `${supabaseUrl}/storage/v1/object/public/galpoes/${imagens[0].storage_path}`
+  const capaImg = imagens.find((img: { is_capa?: boolean }) => img.is_capa) ?? imagens[0];
+  const primeiraImagem = capaImg
+    ? `${supabaseUrl}/storage/v1/object/public/galpoes/${capaImg.storage_path}`
     : null;
 
   const jsonLd = {
@@ -251,34 +256,12 @@ export default async function GalpaoPage({
           <div className="lg:col-span-2">
 
             {/* Galeria */}
-            {imagens.length > 0 ? (
-              <div className="space-y-2">
-                <div className="aspect-video bg-gray-100 overflow-hidden">
-                  <img
-                    src={`${supabaseUrl}/storage/v1/object/public/galpoes/${imagens[0].storage_path}`}
-                    alt={g.titulo}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                {imagens.length > 1 && (
-                  <div className="grid grid-cols-4 gap-2">
-                    {imagens.slice(1).map((img: { id: string; storage_path: string }) => (
-                      <div key={img.id} className="aspect-square bg-gray-100 overflow-hidden">
-                        <img
-                          src={`${supabaseUrl}/storage/v1/object/public/galpoes/${img.storage_path}`}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="aspect-video bg-gray-100 flex items-center justify-center text-gray-300 text-sm">
-                Sem imagens
-              </div>
-            )}
+            <ImageGallery
+              images={imagens}
+              supabaseUrl={supabaseUrl}
+              alt={g.titulo}
+              initialIndex={capaIndex}
+            />
 
             {/* Descrição */}
             {g.descricao && (
