@@ -34,7 +34,8 @@ type Galpao = {
   galpao_imagens: { storage_path: string; ordem: number; is_capa?: boolean }[];
 };
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+import { SUPABASE_URL } from "@/lib/constants";
+const supabaseUrl = SUPABASE_URL;
 
 export default function ConsultaPage() {
   const [galpoes, setGalpoes] = useState<Galpao[]>([]);

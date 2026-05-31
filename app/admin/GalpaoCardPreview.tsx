@@ -4,7 +4,8 @@ import { campoVisivel } from "@/lib/visibilidade";
 import type { ConfigCampo } from "@/lib/visibilidade";
 import type { Galpao } from "./useGalpoes";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+import { SUPABASE_URL } from "@/lib/constants";
+const supabaseUrl = SUPABASE_URL;
 
 type Props = {
   galpao: Galpao;

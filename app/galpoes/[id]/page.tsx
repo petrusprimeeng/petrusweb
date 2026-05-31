@@ -8,6 +8,7 @@ import GalpoesGrid from "@/app/GalpoesGrid";
 import ImageGallery from "@/app/components/ImageGallery";
 import { campoVisivel } from "@/lib/visibilidade";
 import type { ConfigCampo, OverridesVisibilidade } from "@/lib/visibilidade";
+import { SUPABASE_URL } from "@/lib/constants";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.alphamixgalpoes.com.br";
 
@@ -36,13 +37,12 @@ export async function generateMetadata(
     ? g.descricao.slice(0, 155)
     : `${categoriaLabel} para ${tipoLabel.toLowerCase()} em ${localLabel}. ${g.area_construida_m2 ? `Área construída: ${g.area_construida_m2} m².` : ""} Atendimento direto com corretor especializado — Alphamix Galpões.`;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const todasMetaImagens = (g.galpao_imagens ?? []).sort(
     (a: { ordem: number }, b: { ordem: number }) => a.ordem - b.ordem
   ).filter((img: { visivel_site?: boolean }) => img.visivel_site !== false);
   const capaMetaImg = todasMetaImagens.find((img: { is_capa?: boolean }) => img.is_capa) ?? todasMetaImagens[0];
   const ogImage = capaMetaImg
-    ? `${supabaseUrl}/storage/v1/object/public/galpoes/${capaMetaImg.storage_path}`
+    ? `${SUPABASE_URL}/storage/v1/object/public/galpoes/${capaMetaImg.storage_path}`
     : `${siteUrl}/og-image.png`;
 
   const pageUrl = `${siteUrl}/galpoes/${id}`;
@@ -98,7 +98,6 @@ export default async function GalpaoPage({
     .eq("publicado", true)
     .order("updated_at", { ascending: false });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const todasImagens = ([...(g.galpao_imagens ?? [])]).sort((a: { ordem: number }, b: { ordem: number }) => a.ordem - b.ordem);
   const imagens = todasImagens.filter((img: { visivel_site?: boolean }) => img.visivel_site !== false);
   const capaIndex = Math.max(0, imagens.findIndex((img: { is_capa?: boolean }) => img.is_capa));
@@ -133,7 +132,7 @@ export default async function GalpaoPage({
   // JSON-LD para a página do imóvel
   const capaImg = imagens.find((img: { is_capa?: boolean }) => img.is_capa) ?? imagens[0];
   const primeiraImagem = capaImg
-    ? `${supabaseUrl}/storage/v1/object/public/galpoes/${capaImg.storage_path}`
+    ? `${SUPABASE_URL}/storage/v1/object/public/galpoes/${capaImg.storage_path}`
     : null;
 
   const jsonLd = {
@@ -258,7 +257,7 @@ export default async function GalpaoPage({
             {/* Galeria */}
             <ImageGallery
               images={imagens}
-              supabaseUrl={supabaseUrl}
+              supabaseUrl={SUPABASE_URL}
               alt={g.titulo}
               initialIndex={capaIndex}
             />
@@ -292,7 +291,7 @@ export default async function GalpaoPage({
         <h2 className="text-xl font-bold text-gray-900 mb-2">Continue sua busca</h2>
         <GalpoesGrid
           galpoes={(todosGalpoes ?? []) as Parameters<typeof GalpoesGrid>[0]["galpoes"]}
-          supabaseUrl={supabaseUrl!}
+          supabaseUrl={SUPABASE_URL}
           initialCategoria={sp.categoria as "galpao" | "loja" | "terreno" | undefined}
           initialNegocio={sp.negocio as "todos" | "venda" | "locacao" | undefined}
           initialCidade={sp.cidade}
