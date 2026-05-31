@@ -53,9 +53,19 @@ const styles = StyleSheet.create({
   // Mapa
   mapaBox: { marginBottom: 24, borderWidth: 1, borderColor: "#e5e7eb" },
   mapaTitle: { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#374151", textTransform: "uppercase", letterSpacing: 0.8, padding: 10, borderBottomWidth: 1, borderBottomColor: "#e5e7eb" },
-  mapaImg: { width: "100%", height: 250, objectFit: "cover" },
-  mapaLegenda: { flexDirection: "row", gap: 16, padding: 8, backgroundColor: "#f9fafb" },
-  mapaLegendaText: { fontSize: 7, color: "#6b7280" },
+  mapaImg: { width: "100%", height: 280, objectFit: "cover" },
+  mapaAtrib: { fontSize: 6.5, color: "#9ca3af", padding: 4, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: "#e5e7eb" },
+
+  // Legenda numerada
+  mapaLegenda: { padding: 8, paddingHorizontal: 10, backgroundColor: "#f9fafb" },
+  mapaLegendaHeader: { flexDirection: "row", paddingBottom: 4, borderBottomWidth: 0.5, borderBottomColor: "#d1d5db", marginBottom: 4 },
+  mapaLegendaHeaderNum: { fontSize: 6.5, fontFamily: "Helvetica-Bold", color: "#9ca3af", width: 18 },
+  mapaLegendaHeaderTitulo: { fontSize: 6.5, fontFamily: "Helvetica-Bold", color: "#9ca3af", width: 155 },
+  mapaLegendaHeaderEnd: { fontSize: 6.5, fontFamily: "Helvetica-Bold", color: "#9ca3af", flex: 1 },
+  mapaLegendaRow: { flexDirection: "row", marginBottom: 3 },
+  mapaLegendaNum: { fontSize: 7, fontFamily: "Helvetica-Bold", color: "#dc2626", width: 18 },
+  mapaLegendaTitulo: { fontSize: 7, color: "#374151", width: 155 },
+  mapaLegendaEnd: { fontSize: 7, color: "#6b7280", flex: 1 },
 });
 
 type Galpao = {
@@ -81,27 +91,21 @@ type Galpao = {
   galpao_imagens: { storage_path: string; ordem: number; is_capa?: boolean }[];
 };
 
-function buildMapUrl(galpoes: Galpao[], baseUrl: string): string | null {
+type MapResult = { url: string; pontos: Array<Galpao & { num: number }> };
+
+function buildMapUrl(galpoes: Galpao[], baseUrl: string): MapResult | null {
   const comCoordenadas = galpoes.filter((g) => g.latitude && g.longitude);
   if (comCoordenadas.length === 0) return null;
 
-  const lats = comCoordenadas.map((g) => g.latitude as number);
-  const lngs = comCoordenadas.map((g) => g.longitude as number);
-  const centerLat = lats.reduce((a, b) => a + b, 0) / lats.length;
-  const centerLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
-
+  // Marcadores com índice numérico (1-based) para exibir no mapa
   const markers = comCoordenadas
-    .map((g) => `${g.latitude},${g.longitude},ol-marker`)
+    .map((g, i) => `${g.latitude},${g.longitude},${i + 1}`)
     .join("|");
 
-  const params = new URLSearchParams({
-    center: `${centerLat},${centerLng}`,
-    zoom: "13",
-    size: "600x250",
-    markers,
-  });
+  const params = new URLSearchParams({ size: "800x380", markers });
+  const pontos = comCoordenadas.map((g, i) => ({ ...g, num: i + 1 }));
 
-  return `${baseUrl}/api/staticmap?${params}`;
+  return { url: `${baseUrl}/api/staticmap?${params}`, pontos };
 }
 
 type Filtros = Record<string, string>;
@@ -125,6 +129,7 @@ export function PDFRelatorio({
   });
 
   const filtrosAtivos = Object.entries(filtros).filter(([, v]) => v && v !== "todos" && v !== "");
+  const mapaResult = buildMapUrl(galpoes, baseUrl);
 
   return (
     <Document title="Relatório de Galpões — Alphamix Galpões">
@@ -160,22 +165,31 @@ export function PDFRelatorio({
         )}
 
         {/* Mapa de localização */}
-        {(() => {
-          const mapUrl = buildMapUrl(galpoes, baseUrl);
-          if (!mapUrl) return null;
-          const comCoordenadas = galpoes.filter((g) => g.latitude && g.longitude).length;
-          return (
-            <View style={styles.mapaBox}>
-              <Text style={styles.mapaTitle}>Localização dos imóveis</Text>
-              <Image src={mapUrl} style={styles.mapaImg} />
-              <View style={styles.mapaLegenda}>
-                <Text style={styles.mapaLegendaText}>
-                  {comCoordenadas} imóvel(is) com localização disponível · © OpenStreetMap contributors
-                </Text>
+        {mapaResult && (
+          <View style={styles.mapaBox}>
+            <Text style={styles.mapaTitle}>Localização dos imóveis</Text>
+            <Image src={mapaResult.url} style={styles.mapaImg} />
+            <Text style={styles.mapaAtrib}>© OpenStreetMap contributors · © CARTO</Text>
+
+            {/* Legenda numerada */}
+            <View style={styles.mapaLegenda}>
+              <View style={styles.mapaLegendaHeader}>
+                <Text style={styles.mapaLegendaHeaderNum}>N°</Text>
+                <Text style={styles.mapaLegendaHeaderTitulo}>Imóvel</Text>
+                <Text style={styles.mapaLegendaHeaderEnd}>Endereço</Text>
               </View>
+              {mapaResult.pontos.map((g) => (
+                <View key={g.id} style={styles.mapaLegendaRow}>
+                  <Text style={styles.mapaLegendaNum}>{g.num}</Text>
+                  <Text style={styles.mapaLegendaTitulo}>{g.titulo}</Text>
+                  <Text style={styles.mapaLegendaEnd}>
+                    {[g.endereco, g.bairro, g.cidade].filter(Boolean).join(" · ")}
+                  </Text>
+                </View>
+              ))}
             </View>
-          );
-        })()}
+          </View>
+        )}
 
         {/* Resultados */}
         {galpoes.length === 0 ? (
