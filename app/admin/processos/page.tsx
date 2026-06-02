@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-browser";
+import ContatoPicker from "@/app/admin/components/ContatoPicker";
+import type { ContatoResumido } from "@/lib/types";
 
 type Processo = {
   id: string;
@@ -57,8 +59,8 @@ export default function ProcessosPage() {
   // form
   const [titulo, setTitulo] = useState("");
   const [tipo, setTipo] = useState("venda");
-  const [parteA, setParteA] = useState("");
-  const [parteB, setParteB] = useState("");
+  const [proprietarioContato, setProprietarioContato] = useState<ContatoResumido | null>(null);
+  const [clienteContato, setClienteContato] = useState<ContatoResumido | null>(null);
   const [valor, setValor] = useState("");
   const [notas, setNotas] = useState("");
 
@@ -100,8 +102,10 @@ export default function ProcessosPage() {
       .insert({
         titulo: titulo.trim(),
         tipo,
-        parte_a: parteA.trim() || null,
-        parte_b: parteB.trim() || null,
+        proprietario_id: proprietarioContato?.id ?? null,
+        cliente_id: clienteContato?.id ?? null,
+        parte_a: proprietarioContato?.nome ?? null,
+        parte_b: clienteContato?.nome ?? null,
         valor: valor ? Number(valor) : null,
         notas: notas.trim() || null,
       })
@@ -160,7 +164,7 @@ export default function ProcessosPage() {
 
   function resetForm() {
     const primeiroTipo = tiposDisponiveis[0]?.slug ?? "venda";
-    setTitulo(""); setTipo(primeiroTipo); setParteA(""); setParteB(""); setValor(""); setNotas("");
+    setTitulo(""); setTipo(primeiroTipo); setProprietarioContato(null); setClienteContato(null); setValor(""); setNotas("");
   }
 
   const filtrados = processos.filter((p) => {
@@ -279,16 +283,18 @@ export default function ProcessosPage() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">{labelParteA}</label>
-                  <input className={inp} placeholder="Nome ou empresa" value={parteA} onChange={(e) => setParteA(e.target.value)} />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">{labelParteB}</label>
-                  <input className={inp} placeholder="Nome ou empresa" value={parteB} onChange={(e) => setParteB(e.target.value)} />
-                </div>
-              </div>
+              <ContatoPicker
+                label={labelParteA}
+                value={proprietarioContato}
+                onChange={setProprietarioContato}
+                placeholder="Buscar contato…"
+              />
+              <ContatoPicker
+                label={labelParteB}
+                value={clienteContato}
+                onChange={setClienteContato}
+                placeholder="Buscar contato…"
+              />
 
               <div>
                 <label className="text-xs text-gray-500 block mb-1">Valor R$ (opcional)</label>

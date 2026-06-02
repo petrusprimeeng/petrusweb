@@ -27,6 +27,24 @@ type ProcessoVinculado = {
   papel: string;
 };
 
+type ImovelResumido = {
+  id: string;
+  titulo: string;
+  tipo: string;
+  categoria: string;
+  cidade: string | null;
+  publicado: boolean;
+  area_construida_m2: number | null;
+};
+
+type ProcessoResumido = {
+  id: string;
+  titulo: string;
+  tipo: string;
+  status: string;
+  valor: number | null;
+};
+
 const tipoProcessoLabel: Record<string, string> = {
   venda: "Venda", locacao: "Locação", regularizacao: "Regularização",
 };
@@ -42,6 +60,9 @@ export default function ContatoDetalhePage() {
   const router = useRouter();
   const [contato, setContato] = useState<Contato | null>(null);
   const [processos, setProcessos] = useState<ProcessoVinculado[]>([]);
+  const [imoveisProprietario, setImoveisProprietario] = useState<ImovelResumido[]>([]);
+  const [processosComoProprietario, setProcessosComoProprietario] = useState<ProcessoResumido[]>([]);
+  const [processosComoCliente, setProcessosComoCliente] = useState<ProcessoResumido[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -60,12 +81,12 @@ export default function ContatoDetalhePage() {
 
   async function load() {
     const supabase = createClient();
-    const [{ data: c }, { data: pc }] = await Promise.all([
+    const [{ data: c }, { data: pc }, { data: imoveis }, { data: procProp }, { data: procCli }] = await Promise.all([
       supabase.from("contatos").select("*").eq("id", id).single(),
-      supabase
-        .from("processo_contatos")
-        .select("papel, processos(id, titulo, tipo, status)")
-        .eq("contato_id", id),
+      supabase.from("processo_contatos").select("papel, processos(id, titulo, tipo, status)").eq("contato_id", id),
+      supabase.from("galpoes").select("id, titulo, tipo, categoria, cidade, publicado, area_construida_m2").eq("proprietario_id", id).order("created_at", { ascending: false }),
+      supabase.from("processos").select("id, titulo, tipo, status, valor").eq("proprietario_id", id).order("created_at", { ascending: false }),
+      supabase.from("processos").select("id, titulo, tipo, status, valor").eq("cliente_id", id).order("created_at", { ascending: false }),
     ]);
 
     if (c) {
@@ -91,6 +112,9 @@ export default function ContatoDetalhePage() {
       );
     }
 
+    setImoveisProprietario((imoveis ?? []) as ImovelResumido[]);
+    setProcessosComoProprietario((procProp ?? []) as ProcessoResumido[]);
+    setProcessosComoCliente((procCli ?? []) as ProcessoResumido[]);
     setLoading(false);
   }
 
@@ -254,7 +278,7 @@ export default function ContatoDetalhePage() {
         )}
       </div>
 
-      {/* Processos vinculados */}
+      {/* Processos vinculados (outros papéis) */}
       {processos.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
@@ -279,6 +303,97 @@ export default function ContatoDetalhePage() {
           </div>
         </div>
       )}
+
+      {/* Imóveis (proprietário) */}
+      <div>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+          Imóveis (proprietário){imoveisProprietario.length > 0 && ` (${imoveisProprietario.length})`}
+        </p>
+        {imoveisProprietario.length === 0 ? (
+          <p className="text-xs text-gray-300">Nenhum imóvel vinculado como proprietário.</p>
+        ) : (
+          <div className="bg-white border border-gray-200 divide-y divide-gray-100">
+            {imoveisProprietario.map((g) => (
+              <Link
+                key={g.id}
+                href={`/admin/galpoes/${g.id}`}
+                className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{g.titulo}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {g.categoria === "galpao" ? "Galpão" : g.categoria === "loja" ? "Loja" : "Terreno"}
+                    {g.cidade ? ` · ${g.cidade}` : ""}
+                    {g.area_construida_m2 ? ` · ${g.area_construida_m2.toLocaleString("pt-BR")} m²` : ""}
+                  </p>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 shrink-0 font-medium ${g.publicado ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}>
+                  {g.publicado ? "Publicado" : "Oculto"}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Processos como proprietário */}
+      <div>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+          Processos como proprietário{processosComoProprietario.length > 0 && ` (${processosComoProprietario.length})`}
+        </p>
+        {processosComoProprietario.length === 0 ? (
+          <p className="text-xs text-gray-300">Nenhum processo como proprietário.</p>
+        ) : (
+          <div className="bg-white border border-gray-200 divide-y divide-gray-100">
+            {processosComoProprietario.map((p) => (
+              <Link
+                key={p.id}
+                href={`/admin/processos/${p.id}`}
+                className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{p.titulo}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {tipoProcessoLabel[p.tipo] ?? p.tipo}
+                    {p.valor ? ` · R$ ${Number(p.valor).toLocaleString("pt-BR")}` : ""}
+                  </p>
+                </div>
+                <span className="text-xs text-gray-400 shrink-0">{statusLabel[p.status] ?? p.status}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Processos como cliente */}
+      <div>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+          Processos como cliente{processosComoCliente.length > 0 && ` (${processosComoCliente.length})`}
+        </p>
+        {processosComoCliente.length === 0 ? (
+          <p className="text-xs text-gray-300">Nenhum processo como cliente.</p>
+        ) : (
+          <div className="bg-white border border-gray-200 divide-y divide-gray-100">
+            {processosComoCliente.map((p) => (
+              <Link
+                key={p.id}
+                href={`/admin/processos/${p.id}`}
+                className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{p.titulo}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {tipoProcessoLabel[p.tipo] ?? p.tipo}
+                    {p.valor ? ` · R$ ${Number(p.valor).toLocaleString("pt-BR")}` : ""}
+                  </p>
+                </div>
+                <span className="text-xs text-gray-400 shrink-0">{statusLabel[p.status] ?? p.status}</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }

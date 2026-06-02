@@ -8,7 +8,7 @@ export default async function EditarGalpaoPage({ params }: { params: Promise<{ i
   const supabase = await createClient();
 
   const [{ data: galpao }, { data: configCampos }] = await Promise.all([
-    supabase.from("galpoes").select("*").eq("id", id).single(),
+    supabase.from("galpoes").select("*, proprietario:contatos!galpoes_proprietario_id_fkey(id, nome, empresa, tipo_principal)").eq("id", id).single(),
     supabase.from("config_campos").select("*").order("label"),
   ]);
 

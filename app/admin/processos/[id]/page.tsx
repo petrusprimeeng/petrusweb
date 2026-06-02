@@ -13,6 +13,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase-browser";
+import ContatoPicker from "@/app/admin/components/ContatoPicker";
+import type { ContatoResumido } from "@/lib/types";
 
 type GalpaoVinculado = {
   id: string;
@@ -28,6 +30,8 @@ type Processo = {
   status: string;
   parte_a: string | null;
   parte_b: string | null;
+  proprietario_id: string | null;
+  cliente_id: string | null;
   valor: number | null;
   notas: string | null;
   galpao_id: string | null;
@@ -194,6 +198,12 @@ export default function ProcessoDetalhePage() {
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
+  // ── proprietário / cliente FK ──
+  const [proprietarioContato, setProprietarioContato] = useState<ContatoResumido | null>(null);
+  const [clienteContato, setClienteContato] = useState<ContatoResumido | null>(null);
+  const [trocandoProprietario, setTrocandoProprietario] = useState(false);
+  const [trocandoCliente, setTrocandoCliente] = useState(false);
+
   // ── edit inline ──
   const [editandoTitulo, setEditandoTitulo] = useState(false);
   const [editTitulo, setEditTitulo] = useState("");
@@ -235,7 +245,7 @@ export default function ProcessoDetalhePage() {
   async function load() {
     const supabase = createClient();
     const [{ data: proc }, { data: its }, { data: cats }, { data: pc }] = await Promise.all([
-      supabase.from("processos").select("*").eq("id", id).single(),
+      supabase.from("processos").select(`*, proprietario:contatos!processos_proprietario_id_fkey(id, nome, empresa, tipo_principal), cliente:contatos!processos_cliente_id_fkey(id, nome, empresa, tipo_principal)`).eq("id", id).single(),
       supabase.from("processo_itens").select("*").eq("processo_id", id).order("ordem"),
       supabase.from("processo_categorias").select("*").eq("processo_id", id).order("ordem"),
       supabase.from("processo_contatos").select("id, papel, contato_id, contatos(id, nome, tipo_principal)").eq("processo_id", id),
@@ -253,6 +263,10 @@ export default function ProcessoDetalhePage() {
         galpaoVinculado = g ?? null;
       }
       setProcesso({ ...proc, galpao: galpaoVinculado } as Processo);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((proc as any).proprietario) setProprietarioContato((proc as any).proprietario as ContatoResumido);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((proc as any).cliente) setClienteContato((proc as any).cliente as ContatoResumido);
       setEditTitulo(proc.titulo);
       setEditParteA(proc.parte_a ?? "");
       setEditParteB(proc.parte_b ?? "");
@@ -309,6 +323,30 @@ export default function ProcessoDetalhePage() {
       if (data?.signedUrl) urls[item.id] = data.signedUrl;
     }));
     setSignedUrls(urls);
+  }
+
+  // ── trocar proprietário / cliente ─────────────────────────────────────────
+
+  async function trocarProprietario(c: ContatoResumido | null) {
+    setProprietarioContato(c);
+    setTrocandoProprietario(false);
+    const supabase = createClient();
+    await supabase.from("processos").update({
+      proprietario_id: c?.id ?? null,
+      parte_a: c?.nome ?? processo?.parte_a ?? null,
+    }).eq("id", id);
+    setProcesso((p) => p ? { ...p, proprietario_id: c?.id ?? null, parte_a: c?.nome ?? p.parte_a } : p);
+  }
+
+  async function trocarCliente(c: ContatoResumido | null) {
+    setClienteContato(c);
+    setTrocandoCliente(false);
+    const supabase = createClient();
+    await supabase.from("processos").update({
+      cliente_id: c?.id ?? null,
+      parte_b: c?.nome ?? processo?.parte_b ?? null,
+    }).eq("id", id);
+    setProcesso((p) => p ? { ...p, cliente_id: c?.id ?? null, parte_b: c?.nome ?? p.parte_b } : p);
   }
 
   // ── salvar campo inline ───────────────────────────────────────────────────
@@ -547,54 +585,73 @@ export default function ProcessoDetalhePage() {
               </h1>
             )}
 
-            {/* Parte A → Parte B */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {editandoParteA ? (
-                <input
-                  autoFocus
-                  className="text-sm text-gray-500 border-b border-gray-300 focus:outline-none focus:border-gray-900 bg-transparent"
-                  placeholder="Parte A"
-                  value={editParteA}
-                  onChange={(e) => setEditParteA(e.target.value)}
-                  onBlur={() => { salvarCampo("parte_a", editParteA.trim() || null); setEditandoParteA(false); }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") { salvarCampo("parte_a", editParteA.trim() || null); setEditandoParteA(false); }
-                    if (e.key === "Escape") { setEditParteA(processo.parte_a ?? ""); setEditandoParteA(false); }
-                  }}
-                />
+            {/* Proprietário → Cliente */}
+            <div className="flex flex-col gap-2 mt-1">
+              {/* Proprietário */}
+              {trocandoProprietario ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <ContatoPicker label="" value={proprietarioContato} onChange={trocarProprietario} placeholder="Buscar proprietário…" />
+                  </div>
+                  <button onClick={() => setTrocandoProprietario(false)} className="text-xs text-gray-400 hover:text-gray-700 shrink-0">Cancelar</button>
+                </div>
+              ) : proprietarioContato ? (
+                <div className="flex items-center gap-2 group">
+                  <div className="min-w-0">
+                    <Link href={`/admin/contatos/${proprietarioContato.id}`} className="text-sm text-gray-700 hover:text-[#2e3092] font-medium transition-colors">
+                      {proprietarioContato.nome}
+                    </Link>
+                    {proprietarioContato.empresa && <span className="text-xs text-gray-400 ml-1.5">· {proprietarioContato.empresa}</span>}
+                  </div>
+                  <button onClick={() => setTrocandoProprietario(true)} className="opacity-0 group-hover:opacity-100 text-xs text-gray-400 hover:text-gray-700 transition-all shrink-0">Trocar</button>
+                </div>
               ) : (
-                <span
-                  className={`text-sm cursor-text transition-colors ${processo.parte_a ? "text-gray-500 hover:text-gray-700" : "text-gray-300 hover:text-gray-400"}`}
-                  onClick={() => { setEditParteA(processo.parte_a ?? ""); setEditandoParteA(true); }}
-                  title="Clique para editar"
-                >
-                  {processo.parte_a ?? "Parte A"}
-                </span>
+                <div className="flex items-center gap-2">
+                  {processo.parte_a ? (
+                    <span className="text-sm text-gray-500" title="Sem vínculo formal com contato">
+                      {processo.parte_a} <span className="text-amber-400 text-xs">○</span>
+                    </span>
+                  ) : null}
+                  <button onClick={() => setTrocandoProprietario(true)} className="text-xs text-gray-400 hover:text-gray-700 transition-colors">
+                    {processo.parte_a ? "Vincular" : "+ Proprietário"}
+                  </button>
+                </div>
               )}
 
-              {(processo.parte_a || processo.parte_b) && <span className="text-gray-300 text-sm">→</span>}
+              {/* Seta separadora */}
+              {(proprietarioContato || clienteContato || processo.parte_a || processo.parte_b) && (
+                <span className="text-gray-300 text-sm leading-none pl-1">↓</span>
+              )}
 
-              {editandoParteB ? (
-                <input
-                  autoFocus
-                  className="text-sm text-gray-500 border-b border-gray-300 focus:outline-none focus:border-gray-900 bg-transparent"
-                  placeholder="Parte B"
-                  value={editParteB}
-                  onChange={(e) => setEditParteB(e.target.value)}
-                  onBlur={() => { salvarCampo("parte_b", editParteB.trim() || null); setEditandoParteB(false); }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") { salvarCampo("parte_b", editParteB.trim() || null); setEditandoParteB(false); }
-                    if (e.key === "Escape") { setEditParteB(processo.parte_b ?? ""); setEditandoParteB(false); }
-                  }}
-                />
+              {/* Cliente */}
+              {trocandoCliente ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <ContatoPicker label="" value={clienteContato} onChange={trocarCliente} placeholder="Buscar cliente…" />
+                  </div>
+                  <button onClick={() => setTrocandoCliente(false)} className="text-xs text-gray-400 hover:text-gray-700 shrink-0">Cancelar</button>
+                </div>
+              ) : clienteContato ? (
+                <div className="flex items-center gap-2 group">
+                  <div className="min-w-0">
+                    <Link href={`/admin/contatos/${clienteContato.id}`} className="text-sm text-gray-700 hover:text-[#2e3092] font-medium transition-colors">
+                      {clienteContato.nome}
+                    </Link>
+                    {clienteContato.empresa && <span className="text-xs text-gray-400 ml-1.5">· {clienteContato.empresa}</span>}
+                  </div>
+                  <button onClick={() => setTrocandoCliente(true)} className="opacity-0 group-hover:opacity-100 text-xs text-gray-400 hover:text-gray-700 transition-all shrink-0">Trocar</button>
+                </div>
               ) : (
-                <span
-                  className={`text-sm cursor-text transition-colors ${processo.parte_b ? "text-gray-500 hover:text-gray-700" : "text-gray-300 hover:text-gray-400"}`}
-                  onClick={() => { setEditParteB(processo.parte_b ?? ""); setEditandoParteB(true); }}
-                  title="Clique para editar"
-                >
-                  {processo.parte_b ?? "Parte B"}
-                </span>
+                <div className="flex items-center gap-2">
+                  {processo.parte_b ? (
+                    <span className="text-sm text-gray-500" title="Sem vínculo formal com contato">
+                      {processo.parte_b} <span className="text-amber-400 text-xs">○</span>
+                    </span>
+                  ) : null}
+                  <button onClick={() => setTrocandoCliente(true)} className="text-xs text-gray-400 hover:text-gray-700 transition-colors">
+                    {processo.parte_b ? "Vincular" : "+ Cliente"}
+                  </button>
+                </div>
               )}
             </div>
 
