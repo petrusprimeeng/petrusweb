@@ -27,6 +27,7 @@ export function useGalpoes() {
   const [comCarreta, setComCarreta] = useState(false);
   const [comSprinkler, setComSprinkler] = useState(false);
   const [comGuarita, setComGuarita] = useState(false);
+  const [filtroProprietarioId, setFiltroProprietarioId] = useState("");
 
   useEffect(() => { load(); }, []);
 
@@ -42,12 +43,14 @@ export function useGalpoes() {
           capacidade_piso_ton_m2, area_escritorio_m2, truck_court_m,
           avcb_numero, avcb_validade, acessos_viarios, video_url, planta_baixa_url,
           vagas_estacionamento, condominio, valor_condominio, descricao, observacoes,
-          campos_visibilidade, latitude, longitude,
+          campos_visibilidade, latitude, longitude, proprietario_id,
+          proprietario:contatos!galpoes_proprietario_id_fkey(id, nome),
           galpao_imagens (id, storage_path, ordem, visivel_site, is_capa)`)
         .order("created_at", { ascending: false }),
       supabase.from("config_campos").select("*").order("label"),
     ]);
-    setGalpoes(data ?? []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setGalpoes((data ?? []) as any as Galpao[]);
     setConfigCampos((cfg ?? []) as ConfigCampo[]);
     setLoading(false);
   }
@@ -71,9 +74,10 @@ export function useGalpoes() {
       if (valorMin && (g.valor ?? 0) < Number(valorMin)) return false;
       if (valorMax && (g.valor ?? 0) > Number(valorMax)) return false;
       if (docasMin && (g.numero_docas ?? 0) < Number(docasMin)) return false;
+      if (filtroProprietarioId && g.proprietario_id !== filtroProprietarioId) return false;
       return true;
     });
-  }, [galpoes, filtroCategoria, tipo, cidade, soPublicados, comCarreta, comSprinkler, comGuarita, areaMin, areaMax, valorMin, valorMax, docasMin]);
+  }, [galpoes, filtroCategoria, tipo, cidade, soPublicados, comCarreta, comSprinkler, comGuarita, areaMin, areaMax, valorMin, valorMax, docasMin, filtroProprietarioId]);
 
   const stats = useMemo(() => ({
     total: galpoes.length,
@@ -104,6 +108,7 @@ export function useGalpoes() {
     setFiltroCategoria("todos"); setTipo("todos"); setCidade("todas");
     setAreaMin(""); setAreaMax(""); setValorMin(""); setValorMax(""); setDocasMin("");
     setSoPublicados(false); setComCarreta(false); setComSprinkler(false); setComGuarita(false);
+    setFiltroProprietarioId("");
   }
 
   async function togglePublicado(id: string, atual: boolean) {
@@ -169,6 +174,7 @@ export function useGalpoes() {
     comSprinkler, setComSprinkler,
     comGuarita, setComGuarita,
     filtrados, stats, filtrosAtivos, temFiltro,
+    filtroProprietarioId, setFiltroProprietarioId,
     limpar, togglePublicado, geocodificarTodos, excluir,
   };
 }

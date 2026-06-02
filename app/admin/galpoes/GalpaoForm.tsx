@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
 import type { ConfigCampo, OverridesVisibilidade } from "@/lib/visibilidade";
+import ContatoPicker from "@/app/admin/components/ContatoPicker";
+import type { ContatoResumido } from "@/lib/types";
 
 const LocationMap = dynamic(() => import("./LocationMap"), {
   ssr: false,
@@ -106,6 +108,8 @@ export default function GalpaoForm({
     latitude?: number | null;
     longitude?: number | null;
     geojson?: object | null;
+    proprietario?: ContatoResumido | null;
+    proprietario_id?: string | null;
   };
   imagens?: ImagemExistente[];
   configCampos?: ConfigCampo[];
@@ -134,6 +138,11 @@ export default function GalpaoForm({
   const [warningModal, setWarningModal] = useState<WarningInfo | null>(null);
   const [autoSaving, setAutoSaving] = useState(false);
   const [saveAttempted, setSaveAttempted] = useState(false);
+
+  // ── Proprietário state ───────────────────────────────────────────────────
+  const [proprietario, setProprietario] = useState<ContatoResumido | null>(
+    initial?.proprietario ?? null
+  );
 
   // ── Location state ───────────────────────────────────────────────────────
   const [lat, setLat] = useState<number | null>(initial?.latitude ?? null);
@@ -256,6 +265,7 @@ export default function GalpaoForm({
       descricao: form.descricao || null,
       observacoes: form.observacoes || null,
       campos_visibilidade: overridesFinal,
+      proprietario_id: proprietario?.id ?? null,
       updated_at: new Date().toISOString(),
     };
   }
@@ -652,6 +662,13 @@ export default function GalpaoForm({
               </select>
             </FieldFixo>
           </div>
+
+          <ContatoPicker
+            label="Proprietário"
+            value={proprietario}
+            onChange={setProprietario}
+            placeholder="Buscar proprietário…"
+          />
 
           {form.categoria === "terreno" && (
             <FieldVis label="Uso do terreno" campoChave="uso_terreno">

@@ -49,7 +49,16 @@ export type Galpao = {
   campos_visibilidade: Record<string, { card: boolean; ficha: boolean }>;
   latitude: number | null;
   longitude: number | null;
+  proprietario_id: string | null;
+  proprietario?: ContatoResumido | null;
   galpao_imagens: GalpaoImagem[];
+};
+
+export type ContatoResumido = {
+  id: string;
+  nome: string;
+  empresa: string | null;
+  tipo_principal: string;
 };
 
 // Tipo para a grid pública — subconjunto dos campos exibidos ao visitante
