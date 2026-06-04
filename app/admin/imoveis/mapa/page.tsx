@@ -1,21 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useGalpoes } from "../_hooks/useGalpoes";
+import { createClient } from "@/lib/supabase-browser";
 import GalpaoFiltros from "../_components/GalpaoFiltros";
+import MapaListaItem from "../_components/MapaListaItem";
 
 const MapaGalpoes = dynamic(() => import("../_components/MapaGalpoes"), {
   ssr: false,
   loading: () => (
-    <div className="h-[520px] flex items-center justify-center text-sm text-gray-400 border border-gray-200 bg-gray-50">
+    <div className="h-[45vh] md:h-[60vh] flex items-center justify-center text-sm text-gray-400 border border-gray-200 bg-gray-50">
       Carregando mapa...
     </div>
   ),
 });
 
-export default function ImoveisMapaPage() {
+export default function MapaHubPage() {
+  const router = useRouter();
   const {
-    loading,
+    loading, galpoes,
     filtroCategoria, setFiltroCategoria,
     tipo, setTipo, cidade, setCidade, cidades,
     areaMin, setAreaMin, areaMax, setAreaMax,
@@ -26,45 +31,196 @@ export default function ImoveisMapaPage() {
     comSprinkler, setComSprinkler,
     comGuarita, setComGuarita,
     filtrados, filtrosAtivos, temFiltro, limpar,
+    togglePublicado, geocodificarTodos, geocodingProgress,
   } = useGalpoes();
 
-  const comCoordenadas = filtrados.filter(
+  const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [criarMode, setCriarMode] = useState(false);
+  const [camadas, setCamadas] = useState({ publicados: true, ocultos: true });
+  const [salvando, setSalvando] = useState<string | null>(null);
+
+  // Filtro de camadas
+  const visiveis = filtrados.filter((g) => {
+    if (g.publicado && !camadas.publicados) return false;
+    if (!g.publicado && !camadas.ocultos) return false;
+    return true;
+  });
+
+  const comCoordenadas = visiveis.filter(
     (g): g is typeof g & { latitude: number; longitude: number } =>
       g.latitude !== null && g.longitude !== null
   );
 
+  const semCoordenadas = visiveis.filter((g) => g.latitude === null || g.longitude === null);
+
+  async function handlePinDrag(id: string, lat: number, lng: number) {
+    setSalvando(id);
+    const supabase = createClient();
+    await supabase.from("galpoes").update({ latitude: lat, longitude: lng }).eq("id", id);
+    setSalvando(null);
+  }
+
+  async function handleMapClick(lat: number, lng: number) {
+    setCriarMode(false);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("galpoes")
+      .insert({ titulo: "Novo imovel", tipo: "locacao", categoria: "galpao", cidade: "Barueri", latitude: lat, longitude: lng, publicado: false })
+      .select("id")
+      .single();
+    if (data) {
+      router.push(`/admin/imoveis/${data.id}/editar`);
+    }
+  }
+
+  function handleTogglePublicado(id: string, valor: boolean) {
+    const g = galpoes.find((g) => g.id === id);
+    if (g) togglePublicado(id, g.publicado);
+  }
+
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">Mapa de Imoveis</h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          {comCoordenadas.length} imoveis com coordenadas
-        </p>
+    <div className="space-y-0">
+      {/* Header + Toolbar */}
+      <div className="space-y-3 mb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">Mapa de Imoveis</h1>
+            <p className="text-sm text-gray-400 mt-0.5">
+              {comCoordenadas.length} com coordenadas
+              {semCoordenadas.length > 0 && ` · ${semCoordenadas.length} sem pin`}
+            </p>
+          </div>
+        </div>
+
+        {/* Filtros */}
+        <GalpaoFiltros
+          filtroCategoria={filtroCategoria} setFiltroCategoria={setFiltroCategoria}
+          tipo={tipo} setTipo={setTipo}
+          cidade={cidade} setCidade={setCidade}
+          cidades={cidades}
+          areaMin={areaMin} setAreaMin={setAreaMin}
+          areaMax={areaMax} setAreaMax={setAreaMax}
+          valorMin={valorMin} setValorMin={setValorMin}
+          valorMax={valorMax} setValorMax={setValorMax}
+          docasMin={docasMin} setDocasMin={setDocasMin}
+          soPublicados={soPublicados} setSoPublicados={setSoPublicados}
+          comCarreta={comCarreta} setComCarreta={setComCarreta}
+          comSprinkler={comSprinkler} setComSprinkler={setComSprinkler}
+          comGuarita={comGuarita} setComGuarita={setComGuarita}
+          temFiltro={temFiltro}
+          filtrosAtivos={filtrosAtivos}
+          limpar={limpar}
+        />
+
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Camadas */}
+          <div className="flex items-center gap-1 text-xs">
+            <button
+              onClick={() => setCamadas((c) => ({ ...c, publicados: !c.publicados }))}
+              className={`px-2.5 py-1.5 border rounded-full transition-colors ${
+                camadas.publicados ? "bg-green-50 border-green-300 text-green-700" : "bg-white border-gray-200 text-gray-400"
+              }`}
+            >
+              Publicados
+            </button>
+            <button
+              onClick={() => setCamadas((c) => ({ ...c, ocultos: !c.ocultos }))}
+              className={`px-2.5 py-1.5 border rounded-full transition-colors ${
+                camadas.ocultos ? "bg-gray-100 border-gray-300 text-gray-700" : "bg-white border-gray-200 text-gray-400"
+              }`}
+            >
+              Ocultos
+            </button>
+          </div>
+
+          <div className="w-px h-5 bg-gray-200" />
+
+          {/* Modo edição */}
+          <button
+            onClick={() => { setEditMode((v) => !v); setCriarMode(false); }}
+            className={`text-xs px-2.5 py-1.5 border rounded-full transition-colors ${
+              editMode ? "bg-[#2e3092] border-[#2e3092] text-white" : "bg-white border-gray-200 text-gray-600 hover:border-gray-400"
+            }`}
+          >
+            {editMode ? "Editando pins" : "Editar posicoes"}
+          </button>
+
+          {/* Criar marcação */}
+          <button
+            onClick={() => { setCriarMode((v) => !v); setEditMode(false); }}
+            className={`text-xs px-2.5 py-1.5 border rounded-full transition-colors ${
+              criarMode ? "bg-[#2e3092] border-[#2e3092] text-white" : "bg-white border-gray-200 text-gray-600 hover:border-gray-400"
+            }`}
+          >
+            {criarMode ? "Clique no mapa..." : "Nova marcacao"}
+          </button>
+
+          {/* Geocodificar */}
+          {semCoordenadas.length > 0 && (
+            <button
+              onClick={geocodificarTodos}
+              className="text-xs px-2.5 py-1.5 border border-gray-200 rounded-full text-gray-600 hover:border-gray-400 transition-colors"
+            >
+              Geocodificar ({semCoordenadas.length})
+            </button>
+          )}
+        </div>
+
+        {/* Feedback */}
+        {geocodingProgress && (
+          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2">{geocodingProgress}</p>
+        )}
+        {salvando && (
+          <p className="text-xs text-blue-600 bg-blue-50 border border-blue-200 px-3 py-2">Salvando posicao...</p>
+        )}
       </div>
 
-      <GalpaoFiltros
-        filtroCategoria={filtroCategoria} setFiltroCategoria={setFiltroCategoria}
-        tipo={tipo} setTipo={setTipo}
-        cidade={cidade} setCidade={setCidade}
-        cidades={cidades}
-        areaMin={areaMin} setAreaMin={setAreaMin}
-        areaMax={areaMax} setAreaMax={setAreaMax}
-        valorMin={valorMin} setValorMin={setValorMin}
-        valorMax={valorMax} setValorMax={setValorMax}
-        docasMin={docasMin} setDocasMin={setDocasMin}
-        soPublicados={soPublicados} setSoPublicados={setSoPublicados}
-        comCarreta={comCarreta} setComCarreta={setComCarreta}
-        comSprinkler={comSprinkler} setComSprinkler={setComSprinkler}
-        comGuarita={comGuarita} setComGuarita={setComGuarita}
-        temFiltro={temFiltro}
-        filtrosAtivos={filtrosAtivos}
-        limpar={limpar}
-      />
-
+      {/* Mapa */}
       {loading ? (
-        <div className="text-sm text-gray-400 py-12 text-center">Carregando...</div>
+        <div className="h-[45vh] md:h-[60vh] flex items-center justify-center text-sm text-gray-400 border border-gray-200 bg-gray-50">
+          Carregando...
+        </div>
       ) : (
-        <MapaGalpoes galpoes={comCoordenadas} />
+        <MapaGalpoes
+          galpoes={comCoordenadas}
+          editMode={editMode}
+          onPinDrag={handlePinDrag}
+          selecionadoId={selecionadoId}
+          onPinClick={setSelecionadoId}
+          criarMode={criarMode}
+          onMapClick={handleMapClick}
+          height="60vh"
+        />
+      )}
+
+      {/* Lista de imóveis */}
+      {!loading && (
+        <div className="mt-4 border border-gray-200 bg-white">
+          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-900">{visiveis.length} imoveis</p>
+            {selecionadoId && (
+              <button
+                onClick={() => setSelecionadoId(null)}
+                className="text-xs text-gray-400 hover:text-gray-900 transition-colors"
+              >
+                Limpar selecao
+              </button>
+            )}
+          </div>
+          <div className="max-h-[40vh] overflow-y-auto">
+            {visiveis.map((g) => (
+              <MapaListaItem
+                key={g.id}
+                galpao={g}
+                selecionado={g.id === selecionadoId}
+                onCentralizar={setSelecionadoId}
+                onTogglePublicado={handleTogglePublicado}
+              />
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
